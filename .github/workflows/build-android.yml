@@ -6,9 +6,17 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'src/**'
+      - 'init.lua'
+      - 'modules/**'
+      - 'layouts/**'
+      - '.github/workflows/build-android.yml'
   push:
     paths:
       - 'src/**'
+      - 'init.lua'
+      - 'modules/**'
+      - 'layouts/**'
+      - '.github/workflows/build-android.yml'
     branches:
       - main
 
@@ -32,7 +40,7 @@ jobs:
     timeout-minutes: 60
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
           submodules: recursive
 
@@ -70,12 +78,6 @@ jobs:
       run: |
         7z x ant.zip -aoa -oC:\Android\android-sdk
 
-    - name: Download create_android_assets script
-      run: |
-        $url = "https://github.com/opentibiabr/otcv8/releases/download/binary-files/create_android_assets.ps1"
-        $outputFile = "create_android_assets.ps1"
-        Invoke-WebRequest -Uri $url -OutFile $outputFile
-
     - name: Create data.zip for Android
       run: |
         powershell -ExecutionPolicy Bypass -File .\create_android_assets.ps1
@@ -111,7 +113,7 @@ jobs:
         MSBuild.exe /p:Configuration=Release /p:Platform="ARM" /p:BUILD_REVISION=${{github.run_number}}
 
     - name: Upload Build Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: otclientv8-android-${{ github.sha }}
         path: android/otclientv8/ARM/Release/otclientv8_armv7a.apk
