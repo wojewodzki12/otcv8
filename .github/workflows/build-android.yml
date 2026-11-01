@@ -38,6 +38,10 @@ jobs:
     name: android-25
     runs-on: windows-2022
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ARM, ARM64]
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -110,10 +114,11 @@ jobs:
         $env:VS_NdkRoot="C:\Android\android-sdk\android-ndk-r23c"
         $env:VS_AntHome="C:\Android\android-sdk\apache-ant-1.9.7"
         $env:VS_JavaHome="C:\Android\android-sdk\jdk8u302-b08"
-        MSBuild.exe /p:Configuration=Release /p:Platform="ARM" /p:BUILD_REVISION=${{github.run_number}}
+        MSBuild.exe /p:Configuration=Release /p:Platform="${{ matrix.platform }}" /p:BUILD_REVISION=${{github.run_number}}
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: otclientv8-android-${{ github.sha }}
-        path: android/otclientv8/ARM/Release/otclientv8_armv7a.apk
+        name: furia-android-${{ matrix.platform }}-${{ github.sha }}
+        path: android/otclientv8/${{ matrix.platform }}/Release/*.apk
+        if-no-files-found: error
