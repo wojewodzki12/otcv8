@@ -9,6 +9,7 @@ on:
       - 'init.lua'
       - 'modules/**'
       - 'layouts/**'
+      - 'android-assets/**'
       - '.github/workflows/build-android.yml'
   push:
     paths:
@@ -16,6 +17,7 @@ on:
       - 'init.lua'
       - 'modules/**'
       - 'layouts/**'
+      - 'android-assets/**'
       - '.github/workflows/build-android.yml'
     branches:
       - main
@@ -81,6 +83,16 @@ jobs:
     - name: Extract Apache Ant
       run: |
         7z x ant.zip -aoa -oC:\Android\android-sdk
+
+    - name: Install Tibia 8.60 assets
+      shell: pwsh
+      run: |
+        $archive = 'android-assets/furia-tibia860-assets.zip'
+        if (!(Test-Path $archive)) { throw "Missing $archive - upload the prepared ZIP to the branch first." }
+        Expand-Archive -LiteralPath $archive -DestinationPath . -Force
+        foreach ($file in @('data/things/860/Tibia.dat', 'data/things/860/Tibia.spr')) {
+          if (!(Test-Path $file)) { throw "Missing expected asset: $file" }
+        }
 
     - name: Create data.zip for Android
       run: |
