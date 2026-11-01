@@ -6,9 +6,19 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'src/**'
+      - 'init.lua'
+      - 'modules/**'
+      - 'layouts/**'
+      - 'android-assets/**'
+      - '.github/workflows/build-android.yml'
   push:
     paths:
       - 'src/**'
+      - 'init.lua'
+      - 'modules/**'
+      - 'layouts/**'
+      - 'android-assets/**'
+      - '.github/workflows/build-android.yml'
     branches:
       - main
 
@@ -30,9 +40,13 @@ jobs:
     name: android-25
     runs-on: windows-2022
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ARM, ARM64]
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
           submodules: recursive
 
@@ -70,11 +84,15 @@ jobs:
       run: |
         7z x ant.zip -aoa -oC:\Android\android-sdk
 
-    - name: Download create_android_assets script
+    - name: Install Tibia 8.60 assets
+      shell: pwsh
       run: |
-        $url = "https://github.com/opentibiabr/otcv8/releases/download/binary-files/create_android_assets.ps1"
-        $outputFile = "create_android_assets.ps1"
-        Invoke-WebRequest -Uri $url -OutFile $outputFile
+        $archive = 'android-assets/furia-tibia860-assets.zip'
+        if (!(Test-Path $archive)) { throw "Missing $archive - upload the prepared ZIP to the branch first." }
+        Expand-Archive -LiteralPath $archive -DestinationPath . -Force
+        foreach ($file in @('data/things/860/Tibia.dat', 'data/things/860/Tibia.spr')) {
+          if (!(Test-Path $file)) { throw "Missing expected asset: $file" }
+        }
 
     - name: Create data.zip for Android
       run: |
@@ -108,10 +126,11 @@ jobs:
         $env:VS_NdkRoot="C:\Android\android-sdk\android-ndk-r23c"
         $env:VS_AntHome="C:\Android\android-sdk\apache-ant-1.9.7"
         $env:VS_JavaHome="C:\Android\android-sdk\jdk8u302-b08"
-        MSBuild.exe /p:Configuration=Release /p:Platform="ARM" /p:BUILD_REVISION=${{github.run_number}}
+        MSBuild.exe /p:Configuration=Release /p:Platform="${{ matrix.platform }}" /p:BUILD_REVISION=${{github.run_number}}
 
     - name: Upload Build Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: otclientv8-android-${{ github.sha }}
-        path: android/otclientv8/ARM/Release/otclientv8_armv7a.apk
+        name: furia-android-${{ matrix.platform }}-${{ github.sha }}
+        path: android/otclientv8/${{ matrix.platform }}/Release/*.apk
+        if-no-files-found: error
